@@ -1,0 +1,110 @@
+<html>
+
+<head>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css" rel="stylesheet">
+    <title>正则验证</title>
+    <script>
+        var params = {}
+        location.search.substr(1).split('&')
+            .forEach(x => {
+                x = x.split('=')
+                params[x[0]] = decodeURIComponent(x[1])
+            })
+        console.log(params)
+
+        function init() {
+            Array.from(document.querySelectorAll('.grp')).forEach(x => x.style.display = 'none')
+
+            if (!params.role) params.role = 'config'
+            if (!params.reg) params.reg = '.*'
+            if (!params.link) params.link = '/'
+
+            if (params.role == 'valid') {
+                if (params.title) document.title = document.getElementById('title').innerText = params.title
+            }
+
+            document.getElementById(params.role).style.display = ''
+        }
+
+        function gen_link() {
+            var tmp = {}
+            Object.assign(tmp, params)
+            tmp.role = 'valid'
+            var link = location.href.split('?')[0] + '?'
+            link += Object.entries(tmp).map(pair => `${pair[0]}=${encodeURIComponent(pair[1])}`).join('&')
+            return link
+        }
+
+        function change(nput) {
+            params[nput.id.split('-')[1]] = nput.value
+        }
+
+        function valid_regex() {
+            try {
+                return eval(`/${params.reg.replace(/\//, '\\/')}/`)
+            } catch (e) {
+                alert(e + '')
+            }
+        }
+
+        function check_match() {
+            var reg = valid_regex()
+            if (!reg) return false
+            var input = document.getElementById('in-valid').value
+            var matcher = input.match(reg)
+            if (matcher) return matcher[0] == input
+        }
+
+        // 复制文本
+        function copyToClipboard(text) {
+            var save = function (e) {
+                e.clipboardData.setData('text/plain', text); // 剪贴板内容设置
+                e.preventDefault();
+            }
+            document.addEventListener('copy', save); // 监听浏览器copy事件
+            document.execCommand('copy'); // 执行copy事件，这时监听函数会执行save函数。
+            document.removeEventListener('copy', save); // 移除copy事件
+
+            // 显示已复制文本
+            if (text.length > 100)
+                text = `${text.substring(0, 100)}... (共${text.length}字符)`
+        }
+
+    </script>
+</head>
+
+<body onload='init()'>
+    <br>
+    <div class='container'>
+        <div class='grp' id='config'>
+            <h2>配置页</h2>
+            <br>
+            <input class='form-control' id='in-reg' placeholder='用于匹配的正则表达式（\需转义，/无需转义）' onchange="change(this)">
+            <br>
+            <input class='form-control' id='in-link' placeholder='匹配成功的跳转链接' onchange="change(this)">
+            <br>
+            <input class='form-control' id='in-title' placeholder='验证页标题' onchange="change(this)">
+            <br>
+            <div class='row'>
+                <div class='col-sm-6'>
+                    <button class='btn btn-info form-control'
+                        onclick='if(valid_regex()) location.href=gen_link()'>生成验证页</button>
+                </div>
+                <div class='col-sm-6'>
+                    <button class='btn btn-info form-control'
+                        onclick='if(valid_regex()) copyToClipboard(gen_link())'>复制验证页链接</button>
+                </div>
+            </div>
+        </div>
+        <div class='grp' id='valid'>
+            <h2 id='title'>验证页</h2>
+            <br>
+            <input class='form-control' id='in-valid' placeholder='请输入验证信息'>
+            <br>
+            <button class='btn btn-info form-control'
+                onclick="if(check_match()) location.href=params.link; else alert('验证失败')">验证</button>
+        </div>
+    </div>
+</body>
+
+</html>
